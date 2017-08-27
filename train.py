@@ -20,20 +20,20 @@ from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, inv_p
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
-BATCH_SIZE = 10
-DATA_DIRECTORY = '/home/VOCdevkit'
-DATA_LIST_PATH = './dataset/train.txt'
+BATCH_SIZE = 1
+DATA_DIRECTORY = '/SSD_data/cityscapes_dataset/cityscape'
+DATA_LIST_PATH = '/SSD_data/cityscapes_dataset/cityscape/list/train_list.txt'
 IGNORE_LABEL = 255
-INPUT_SIZE = '321,321'
-LEARNING_RATE = 2.5e-4
+INPUT_SIZE = '713,713'
+LEARNING_RATE = 9e-5
 MOMENTUM = 0.9
-NUM_CLASSES = 21
-NUM_STEPS = 20001
+NUM_CLASSES = 19
+NUM_STEPS = 100001
 POWER = 0.9
 RANDOM_SEED = 1234
 RESTORE_FROM = './deeplab_resnet.ckpt'
-SAVE_NUM_IMAGES = 2
-SAVE_PRED_EVERY = 1000
+SAVE_NUM_IMAGES = 1
+SAVE_PRED_EVERY = 50
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
@@ -150,7 +150,7 @@ def main():
     # if they are presented in var_list of the optimiser definition.
 
     # Predictions.
-    raw_output = net.layers['fc1_voc12']
+    raw_output = net.layers['fc_out']
     # Which variables to load. Running means and variances are not trainable,
     # thus all_variables() should be restored.
     restore_var = [v for v in tf.global_variables() if 'fc' not in v.name or not args.not_restore_last]
@@ -224,12 +224,17 @@ def main():
     
     # Saver for storing checkpoints of the model.
     saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=10)
-    
-    # Load variables if the checkpoint is provided.
-    if args.restore_from is not None:
+
+    ckpt = tf.train.get_checkpoint_state(SNAPSHOT_DIR)
+
+    if ckpt and ckpt.model_checkpoint_path:
         loader = tf.train.Saver(var_list=restore_var)
-        load(loader, sess, args.restore_from)
-    
+        load_step = int(os.path.basename(ckpt.model_checkpoint_path).split('-')[1])
+        load(loader, sess, ckpt.model_checkpoint_path)
+    else:
+        print('No checkpoint file found.')
+        load_step = 0
+
     # Start queue threads.
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
@@ -246,6 +251,7 @@ def main():
             loss_value, _ = sess.run([reduced_loss, train_op], feed_dict=feed_dict)
         duration = time.time() - start_time
         print('step {:d} \t loss = {:.3f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
+        
     coord.request_stop()
     coord.join(threads)
     

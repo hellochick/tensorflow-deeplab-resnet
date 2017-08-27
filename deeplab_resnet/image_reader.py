@@ -12,7 +12,7 @@ def image_scaling(img, label):
       label: Segmentation mask to scale.
     """
     
-    scale = tf.random_uniform([1], minval=0.5, maxval=1.5, dtype=tf.float32, seed=None)
+    scale = tf.random_uniform([1], minval=0.5, maxval=2.0, dtype=tf.float32, seed=None)
     h_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[0]), scale))
     w_new = tf.to_int32(tf.multiply(tf.to_float(tf.shape(img)[1]), scale))
     new_shape = tf.squeeze(tf.stack([h_new, w_new]), squeeze_dims=[1])
@@ -84,11 +84,22 @@ def read_labeled_image_list(data_dir, data_list):
     masks = []
     for line in f:
         try:
-            image, mask = line.strip("\n").split(' ')
+            image, mask = line[:-1].split(' ')
         except ValueError: # Adhoc for test.
             image = mask = line.strip("\n")
-        images.append(data_dir + image)
-        masks.append(data_dir + mask)
+
+        image = os.path.join(data_dir, image)
+        mask = os.path.join(data_dir, mask)
+
+        if not tf.gfile.Exists(image):
+            raise ValueError('Failed to find file: ' + image)
+
+        if not tf.gfile.Exists(mask):
+            raise ValueError('Failed to find file: ' + mask)
+
+        images.append(image)
+        masks.append(mask)
+
     return images, masks
 
 def read_images_from_disk(input_queue, input_size, random_scale, random_mirror, ignore_label, img_mean): # optional pre-processing arguments
@@ -112,7 +123,7 @@ def read_images_from_disk(input_queue, input_size, random_scale, random_mirror, 
     img_contents = tf.read_file(input_queue[0])
     label_contents = tf.read_file(input_queue[1])
     
-    img = tf.image.decode_jpeg(img_contents, channels=3)
+    img = tf.image.decode_png(img_contents, channels=3)
     img_r, img_g, img_b = tf.split(axis=2, num_or_size_splits=3, value=img)
     img = tf.cast(tf.concat(axis=2, values=[img_b, img_g, img_r]), dtype=tf.float32)
     # Extract mean.

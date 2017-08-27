@@ -108,6 +108,7 @@ class DeepLabResNetModel(Network):
              .conv(1, 1, 1024, 1, 1, biased=False, relu=False, name='res4a_branch1')
              .batch_normalization(is_training=is_training, activation_fn=None, name='bn4a_branch1'))
 
+        ### block 4
         (self.feed('res3b3_relu')
              .conv(1, 1, 256, 1, 1, biased=False, relu=False, name='res4a_branch2a')
              .batch_normalization(is_training=is_training, activation_fn=tf.nn.relu, name='bn4a_branch2a')
@@ -138,6 +139,9 @@ class DeepLabResNetModel(Network):
              .conv(1, 1, 1024, 1, 1, biased=False, relu=False, name='res4b2_branch2c')
              .batch_normalization(is_training=is_training, activation_fn=None, name='bn4b2_branch2c'))
 
+        ### block 4
+
+        ### block 5
         (self.feed('res4b1_relu', 
                    'bn4b2_branch2c')
              .add(name='res4b2')
@@ -171,6 +175,9 @@ class DeepLabResNetModel(Network):
              .conv(1, 1, 1024, 1, 1, biased=False, relu=False, name='res4b5_branch2c')
              .batch_normalization(is_training=is_training, activation_fn=None, name='bn4b5_branch2c'))
 
+        ### block 5
+
+        ### block 6
         (self.feed('res4b4_relu', 
                    'bn4b5_branch2c')
              .add(name='res4b5')
@@ -204,6 +211,9 @@ class DeepLabResNetModel(Network):
              .conv(1, 1, 1024, 1, 1, biased=False, relu=False, name='res4b8_branch2c')
              .batch_normalization(is_training=is_training, activation_fn=None, name='bn4b8_branch2c'))
 
+        ### block 6
+
+        ### block 7
         (self.feed('res4b7_relu', 
                    'bn4b8_branch2c')
              .add(name='res4b8')
@@ -237,6 +247,7 @@ class DeepLabResNetModel(Network):
              .conv(1, 1, 1024, 1, 1, biased=False, relu=False, name='res4b11_branch2c')
              .batch_normalization(is_training=is_training, activation_fn=None, name='bn4b11_branch2c'))
 
+        ### block 7
         (self.feed('res4b10_relu', 
                    'bn4b11_branch2c')
              .add(name='res4b11')
@@ -399,19 +410,26 @@ class DeepLabResNetModel(Network):
                    'bn5c_branch2c')
              .add(name='res5c')
              .relu(name='res5c_relu')
-             .atrous_conv(3, 3, num_classes, 6, padding='SAME', relu=False, name='fc1_voc12_c0'))
+             .atrous_conv(3, 3, 256, 12, padding='SAME', relu=False, name='fc1_voc12_c0')
+             .batch_normalization(is_training=is_training, activation_fn=None, name='fc1_voc12_c0_bn'))
 
         (self.feed('res5c_relu')
-             .atrous_conv(3, 3, num_classes, 12, padding='SAME', relu=False, name='fc1_voc12_c1'))
+             .atrous_conv(3, 3, 256, 24, padding='SAME', relu=False, name='fc1_voc12_c1')
+             .batch_normalization(is_training=is_training, activation_fn=None, name='fc1_voc12_c1_bn'))
 
         (self.feed('res5c_relu')
-             .atrous_conv(3, 3, num_classes, 18, padding='SAME', relu=False, name='fc1_voc12_c2'))
+             .atrous_conv(3, 3, 256, 36, padding='SAME', relu=False, name='fc1_voc12_c2')
+             .batch_normalization(is_training=is_training, activation_fn=None, name='fc1_voc12_c2_bn'))
 
         (self.feed('res5c_relu')
-             .atrous_conv(3, 3, num_classes, 24, padding='SAME', relu=False, name='fc1_voc12_c3'))
+             .atrous_conv(1, 1, 256, 1, padding='SAME', relu=False, name='fc1_voc12_c3')
+             .batch_normalization(is_training=is_training, activation_fn=None, name='fc1_voc12_c3_bn'))
 
-        (self.feed('fc1_voc12_c0', 
-                   'fc1_voc12_c1', 
-                   'fc1_voc12_c2', 
-                   'fc1_voc12_c3')
-             .add(name='fc1_voc12'))
+        (self.feed('fc1_voc12_c0_bn', 
+                   'fc1_voc12_c1_bn', 
+                   'fc1_voc12_c2_bn', 
+                   'fc1_voc12_c3_bn')
+             .add(name='fc1_voc12')
+             .conv(1, 1, 256, 1, 1, biased=False, relu=False, name='fc_oooo')
+             .batch_normalization(is_training=is_training, activation_fn=None, name='fc_oooo_bn')
+             .conv(1, 1, num_classes, 1, 1, biased=False, relu=False, name='fc_out'))
